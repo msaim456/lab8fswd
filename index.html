@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NovaStore - Modern E-Commerce Platform</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            --hero-bg: #0f172a;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background-color: #f8fafc;
+            color: #334155;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .navbar-brand {
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero-section {
+            background: linear-gradient(rgba(15, 23, 42, 0.85), rgba(15, 23, 42, 0.85)), url('https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=1600&q=80') center/cover no-repeat;
+            color: white;
+            padding: 5rem 0;
+            border-radius: 0 0 2rem 2rem;
+        }
+
+        .product-card {
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
+            border: none;
+            border-radius: 1rem;
+            overflow: hidden;
+        }
+
+        .product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 24px rgba(0,0,0,0.08) !important;
+        }
+
+        .product-img-wrapper {
+            position: relative;
+            padding-top: 75%;
+            overflow: hidden;
+            background-color: #f1f5f9;
+        }
+
+        .product-img-wrapper img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+
+        .product-card:hover .product-img-wrapper img {
+            transform: scale(1.05);
+        }
+
+        .badge-category {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            backdrop-filter: blur(8px);
+            background: rgba(255, 255, 255, 0.85);
+            color: #0f172a;
+            font-weight: 600;
+            z-index: 2;
+        }
+
+        .star-rating {
+            color: #f59e0b;
+        }
+
+        .cart-badge {
+            font-size: 0.75rem;
+            transform: translate(-30%, -30%);
+        }
+
+        .toast-container {
+            z-index: 1090;
+        }
+
+        .avatar-img {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .review-card {
+            border: none;
+            border-radius: 1rem;
+            background: #ffffff;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- NAVBAR -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white sticky-top shadow-sm py-3">
+        <div class="container">
+            <a class="navbar-brand fs-3 me-4" href="#">
+                <i class="bi bi-bag-heart-fill text-primary me-2"></i>NovaStore
+            </a>
+            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarContent">
+                <!-- Search Bar -->
+                <form class="d-flex mx-auto my-2 my-lg-0 w-100 max-w-md" style="max-width: 450px;" onsubmit="event.preventDefault(); filterProducts();">
+                    <div class="input-group">
+                        <input type="search" id="searchInput" class="form-control bg-light border-end-0 rounded-start-pill ps-3" placeholder="Search gadgets, fashion, shoes..." onkeyup="filterProducts()">
+                        <button class="btn btn-light border-start-0 rounded-end-pill px-3 text-secondary" type="button" onclick="filterProducts()">
+                            <i class="bi bi-search"></i>
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Navigation Links & User Action -->
+                <ul class="navbar-nav ms-auto align-items-lg-center gap-2 mt-3 mt-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link active fw-medium" href="#productsSection">Shop</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link fw-medium" href="#reviewsSection">Reviews</a>
+                    </li>
+                    <!-- Auth Container (Dynamic render based on login state) -->
+                    <li class="nav-item ms-lg-2" id="authNavContainer">
+                        <!-- Populated by JS -->
+                    </li>
+                    <!-- Cart Button -->
+                    <li class="nav-item ms-lg-2">
+                        <button class="btn btn-outline-primary rounded-pill position-relative px-3" data-bs-toggle="modal" data-bs-target="#cartModal">
+                            <i class="bi bi-cart3 me-1"></i> Cart
+                            <span id="cartCountBadge" class="position-absolute top-0 start-100 badge rounded-pill bg-danger cart-badge">
+                                0
+                            </span>
+                        </button>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- HERO SECTION -->
+    <header class="hero-section text-center text-lg-start mb-5">
+        <div class="container">
+            <div class="row align-items-center gy-4">
+                <div class="col-lg-7">
+                    <span class="badge bg-primary bg-opacity-25 text-white border border-primary px-3 py-2 rounded-pill mb-3">
+                        <i class="bi bi-stars me-1"></i> New Season Arrivals
+                    </span>
+                    <h1 class="display-4 fw-bold mb-3">Elevate Your Style & Tech Essentials</h1>
+                    <p class="lead text-light text-opacity-75 mb-4">Discover curated high-quality products from tech gadgets to modern apparel, with fast shipping and 24/7 customer support.</p>
+                    <div class="d-flex flex-wrap gap-3 justify-content-center justify-content-lg-start">
+                        <a href="#productsSection" class="btn btn-primary btn-lg rounded-pill px-4 shadow">Explore Catalog</a>
+                        <a href="#reviewsSection" class="btn btn-outline-light btn-lg rounded-pill px-4">See Customer Reviews</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="container flex-grow-1">
+
+        <!-- PRODUCTS SECTION -->
+        <section id="productsSection" class="mb-5 py-3">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+                <div>
+                    <h2 class="fw-bold mb-1">Featured Products</h2>
+                    <p class="text-muted mb-0">Find the perfect items tailored for you</p>
+                </div>
+                <!-- Category Filter Buttons -->
+                <div class="d-flex flex-wrap gap-2" id="categoryFilterContainer">
+                    <button class="btn btn-sm btn-primary rounded-pill px-3 filter-btn active" onclick="filterCategory('All', this)">All Items</button>
+                    <button class="btn btn-sm btn-outline-secondary rounded-pill px-3 filter-btn" onclick="filterCategory('Electronics', this)">Electronics</button>
+                    <button class="btn btn-sm btn-outline-secondary rounded-pill px-3 filter-btn" onclick="filterCategory('Fashion', this)">Fashion</button>
+                    <button class="btn btn-sm btn-outline-secondary rounded-pill px-3 filter-btn" onclick="filterCategory('Lifestyle', this)">Lifestyle</button>
+                </div>
+            </div>
+
+            <!-- Product Cards Grid -->
+            <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 row-cols-xl-4 g-4" id="productList">
+                <!-- JavaScript renders items here -->
+            </div>
+            
+            <!-- Empty State -->
+            <div id="noProductsFound" class="text-center py-5 d-none">
+                <i class="bi bi-search fs-1 text-muted"></i>
+                <h4 class="mt-3">No products found</h4>
+                <p class="text-muted">Try adjusting your search terms or filters.</p>
+            </div>
+        </section>
+
+        <!-- REVIEWS SECTION -->
+        <section id="reviewsSection" class="my-5 py-4 border-top">
+            <div class="row align-items-center mb-4">
+                <div class="col-md-8">
+                    <h2 class="fw-bold mb-1">What Our Customers Say</h2>
+                    <p class="text-muted">Real experiences from verified buyers</p>
+                </div>
+                <div class="col-md-4 text-md-end">
+                    <button class="btn btn-outline-primary rounded-pill" data-bs-toggle="modal" data-bs-target="#addReviewModal">
+                        <i class="bi bi-pencil-square me-1"></i> Write a Review
+                    </button>
+                </div>
+            </div>
+
+            <!-- Reviews Grid -->
+            <div class="row g-4" id="reviewsContainer">
+                <!-- JavaScript renders customer reviews -->
+            </div>
+        </section>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="bg-dark text-light py-4 mt-auto">
+        <div class="container text-center text-md-start">
+            <div class="row gy-3 align-items-center">
+                <div class="col-md-6">
+                    <h5 class="fw-bold mb-1 text-white"><i class="bi bi-bag-heart-fill me-2 text-primary"></i>NovaStore</h5>
+                    <p class="small text-muted mb-0">Providing standard shopping experience everywhere.</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <span class="small text-muted">&copy; 2026 NovaStore. All rights reserved.</span>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- CART MODAL -->
+    <div class="modal fade" id="cartModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content rounded-4 border-0">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold fs-4"><i class="bi bi-cart3 me-2 text-primary"></i>Your Shopping Cart</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body py-4">
+                    <!-- Cart items list -->
+                    <div id="cartItemsList" class="mb-4">
+                        <!-- Rendered by JS -->
+                    </div>
+
+                    <!-- Cart Summary -->
+                    <div id="cartSummary" class="bg-light p-3 rounded-3 d-none">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">Subtotal</span>
+                            <span id="cartSubtotal" class="fw-semibold">$0.00</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">Estimated Tax (8%)</span>
+                            <span id="cartTax" class="fw-semibold">$0.00</span>
+                        </div>
+                        <hr class="my-2">
+                        <div class="d-flex justify-content-between fs-5 fw-bold">
+                            <span>Total</span>
+                            <span id="cartTotal" class="text-primary">$0.00</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-outline-danger rounded-pill me-auto" id="clearCartBtn" onclick="clearCart()">
+                        <i class="bi bi-trash me-1"></i> Clear Cart
+                    </button>
+                    <button type="button" class="btn btn-secondary rounded-pill" data-bs-dismiss="modal">Continue Shopping</button>
+                    <button type="button" class="btn btn-primary rounded-pill px-4" id="proceedCheckoutBtn" onclick="openCheckoutModal()">
+                        Checkout <i class="bi bi-arrow-right ms-1"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CHECKOUT MODAL -->
+    <div class="modal fade" id="checkoutModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content rounded-4 border-0">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title fw-bold fs-4"><i class="bi bi-credit-card me-2 text-primary"></i>Checkout</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="checkoutForm" onsubmit="processOrder(event)">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <h6 class="fw-bold border-bottom pb-2">1. Delivery Address</h6>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small text-muted">Full Name</label>
+                                <input type="text" class="form-control" id="checkoutName" required placeholder="John Doe">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small text-muted">Email</label>
+                                <input type="email" class="form-control" id="checkoutEmail" required placeholder="john@example.com">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label small text-muted">Street Address</label>
+                                <input type="text" class="form-control" required placeholder="123 Main Street, Apt 4B">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small text-muted">City</label>
+                                <input type="text" class="form-control" required placeholder="New York">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small text-muted">Zip Code</label>
+                                <input type="text" class="form-control" required placeholder="10001">
+                            </div>
+
+                            <div class="col-12 mt-4">
+                                <h6 class="fw-bold border-bottom pb-2">2. Payment Method</h6>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label small text-muted">Cardholder Name</label>
+                                <input type="text" class="form-control" required placeholder="John Doe">
+                            </div>
+                            <div class="col-md-8">
+                                <label class="form-label small text-muted">Card Number</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-white"><i class="bi bi-credit-card"></i></span>
+                                    <input type="text" class="form-control" placeholder="4532 •••• •••• 8892" maxlength="19" required>
+                                </div>
+                            </div>
+                            <div class="col-md-2 col-6">
+                                <label class="form-label small text-muted">Expiry</label>
+                                <input type="text" class="form-control" placeholder="MM/YY" required>
+                            </div>
+                            <div class="col-md-2 col-6">
+                                <label class="form-label small text-muted">CVV</label>
+                                <input type="password" class="form-control" placeholder="123" maxlength="4" required>
+                            </div>
+                        </div>
+
+                        <div class="bg-light p-3 rounded-3 my-4">
+                            <div class="d-flex justify-content-between fw-bold fs-5">
+                                <span>Total Amount to Pay:</span>
+                                <span id="checkoutTotalPay" class="text-primary">$0.00</span>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2">
+                            <button type="button" class="btn btn-secondary rounded-pill" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-success rounded-pill px-4">Place Order</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- LOGIN MODAL -->
+    <div class="modal fade" id="loginModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-4 border-0">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold fs-4">Welcome Back</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body py-4">
+                    <form id="loginForm" onsubmit="handleLogin(event)">
+                        <div class="mb-3">
+                            <label class="form-label small text-muted">Email address</label>
+                            <input type="email" class="form-control" id="loginEmail" required placeholder="user@example.com">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small text-muted">Password</label>
+                            <input type="password" class="form-control" id="loginPassword" required placeholder="••••••••">
+                        </div>
+                        <button type="submit" class="btn btn-primary rounded-pill w-100 mt-2 py-2">Log In</button>
+                    </form>
+                    <p class="text-center small text-muted mt-3 mb-0">
+                        Don't have an account? <a href="#" class="text-primary text-decoration-none" onclick="switchModal('#loginModal', '#signupModal')">Sign up</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SIGNUP MODAL -->
+    <div class="modal fade" id="signupModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-4 border-0">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold fs-4">Create Account</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body py-4">
+                    <form id="signupForm" onsubmit="handleSignup(event)">
+                        <div class="mb-3">
+                            <label class="form-label small text-muted">Full Name</label>
+                            <input type="text" class="form-control" id="signupName" required placeholder="Jane Doe">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small text-muted">Email address</label>
+                            <input type="email" class="form-control" id="signupEmail" required placeholder="jane@example.com">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small text-muted">Password</label>
+                            <input type="password" class="form-control" id="signupPassword" required placeholder="••••••••">
+                        </div>
+                        <button type="submit" class="btn btn-primary rounded-pill w-100 mt-2 py-2">Sign Up</button>
+                    </form>
+                    <p class="text-center small text-muted mt-3 mb-0">
+                        Already have an account? <a href="#" class="text-primary text-decoration-none" onclick="switchModal('#signupModal', '#loginModal')">Log in</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ADD REVIEW MODAL -->
+    <div class="modal fade" id="addReviewModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-4 border-0">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold fs-4">Leave a Review</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body py-4">
+                    <form id="reviewForm" onsubmit="handleReviewSubmit(event)">
+                        <div class="mb-3">
+                            <label class="form-label small text-muted">Your Name</label>
+                            <input type="text" class="form-control" id="reviewAuthor" required placeholder="Alex Johnson">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small text-muted">Rating</label>
+                            <select class="form-select" id="reviewRating" required>
+                                <option value="5">★★★★★ (5/5)</option>
+                                <option value="4">★★★★☆ (4/5)</option>
+                                <option value="3">★★★☆☆ (3/5)</option>
+                                <option value="2">★★☆☆☆ (2/5)</option>
+                                <option value="1">★☆☆☆☆ (1/5)</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small text-muted">Your Feedback</label>
+                            <textarea class="form-control" id="reviewComment" rows="3" required placeholder="Write your review here..."></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary rounded-pill w-100 py-2">Submit Review</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION CONTAINER -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+        <div id="liveToast" class="toast align-items-center text-white bg-dark border-0 rounded-3 shadow" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body d-flex align-items-center" id="toastMessage">
+                    <i class="bi bi-check-circle-fill text-success fs-5 me-2"></i>
+                    <span>Notification message</span>
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JS Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // State Management
+        let products = [
+            { id: 1, name: "Wireless Noise-Canceling Headphones", category: "Electronics", price: 199.99, rating: 4.8, image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=600&q=80" },
+            { id: 2, name: "Minimalist Leather Smart Watch", category: "Electronics", price: 149.50, rating: 4.6, image: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=600&q=80" },
+            { id: 3, name: "Classic Denim Jacket", category: "Fashion", price: 79.99, rating: 4.5, image: "https://images.unsplash.com/photo-1576995853123-5a10305d93c0?auto=format&fit=crop&w=600&q=80" },
+            { id: 4, name: "Ergonomic Mechanical Keyboard", category: "Electronics", price: 129.00, rating: 4.9, image: "https://images.unsplash.com/photo-1587829741301-dc798b83add3?auto=format&fit=crop&w=600&q=80" },
+            { id: 5, name: "Urban Trail Running Shoes", category: "Fashion", price: 110.00, rating: 4.7, image: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=600&q=80" },
+            { id: 6, name: "Stainless Steel Water Bottle", category: "Lifestyle", price: 28.50, rating: 4.4, image: "https://images.unsplash.com/photo-1602143407151-7111542de6e8?auto=format&fit=crop&w=600&q=80" },
+            { id: 7, name: "Polarized Retro Sunglasses", category: "Fashion", price: 45.00, rating: 4.3, image: "https://images.unsplash.com/photo-1511499767150-a48a237f0083?auto=format&fit=crop&w=600&q=80" },
+            { id: 8, name: "Scented Soy Wax Candle", category: "Lifestyle", price: 22.00, rating: 4.8, image: "https://images.unsplash.com/photo-1603006905003-be475563bc59?auto=format&fit=crop&w=600&q=80" }
+        ];
+
+        let cart = [];
+        let currentUser = null; // { name, email }
+        let currentCategory = "All";
+
+        let reviews = [
+            { id: 1, author: "Sarah Jenkins", rating: 5, comment: "Order arrived super fast! The noise-canceling headphones are exceptional quality.", avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80" },
+            { id: 2, author: "Michael Chen", rating: 5, comment: "Great customer support and high-quality materials. Will definitely purchase again.", avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80" },
+            { id: 3, author: "Emma Watson", rating: 4, comment: "Love the shoes! Very comfortable for daily walks and stylish as well.", avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=150&q=80" }
+        ];
+
+        // Initialization
+        window.addEventListener('DOMContentLoaded', () => {
+            renderAuthNav();
+            renderProducts(products);
+            renderReviews();
+            updateCartUI();
+        });
+
+        function renderProducts(items) {
+            const container = document.getElementById('productList');
+            const noProducts = document.getElementById('noProductsFound');
+
+            if (items.length === 0) {
+                container.innerHTML = '';
+                noProducts.classList.remove('d-none');
+                return;
+            }
+
+            noProducts.classList.add('d-none');
+            container.innerHTML = items.map(product => `
+                <div class="col">
+                    <div class="card h-100 product-card shadow-sm">
+                        <div class="product-img-wrapper">
+                            <span class="badge badge-category rounded-pill">${product.category}</span>
+                            <img src="${product.image}" alt="${product.name}" loading="lazy" onerror="this.src='https://placehold.co/600x450/e2e8f0/475569?text=Product+Image'">
+                        </div>
+                        <div class="card-body d-flex flex-column justify-content-between p-3">
+                            <div>
+                                <div class="d-flex align-items-center mb-1">
+                                    <div class="star-rating me-2 small">
+                                        ${renderStars(product.rating)}
+                                    </div>
+                                    <span class="small text-muted fw-semibold">${product.rating}</span>
+                                </div>
+                                <h6 class="card-title fw-bold text-dark mb-2">${product.name}</h6>
+                            </div>
+                            <div class="d-flex align-items-center justify-content-between mt-3 pt-2 border-top">
+                                <span class="fs-5 fw-bold text-primary">$${product.price.toFixed(2)}</span>
+                                <button class="btn btn-sm btn-primary rounded-pill px-3" onclick="addToCart(${product.id})">
+                                    <i class="bi bi-cart-plus me-1"></i> Add
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderStars(rating) {
+            let stars = '';
+            for (let i = 1; i <= 5; i++) {
+                if (i <= Math.floor(rating)) {
+                    stars += '<i class="bi bi-star-fill"></i>';
+                } else if (i - rating < 1) {
+                    stars += '<i class="bi bi-star-half"></i>';
+                } else {
+                    stars += '<i class="bi bi-star"></i>';
+                }
+            }
+            return stars;
+        }
+
+        // Filtering and Search
+        function filterCategory(category, buttonEl) {
+            currentCategory = category;
+            
+            // Toggle active state on buttons
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('btn-primary', 'active');
+                btn.classList.add('btn-outline-secondary');
+            });
+            buttonEl.classList.remove('btn-outline-secondary');
+            buttonEl.classList.add('btn-primary', 'active');
+
+            filterProducts();
+        }
+
+        function filterProducts() {
+            const query = document.getElementById('searchInput').value.toLowerCase().trim();
+            
+            const filtered = products.filter(product => {
+                const matchesCategory = currentCategory === "All" || product.category === currentCategory;
+                const matchesSearch = product.name.toLowerCase().includes(query) || product.category.toLowerCase().includes(query);
+                return matchesCategory && matchesSearch;
+            });
+
+            renderProducts(filtered);
+        }
+
+        function addToCart(productId) {
+            const product = products.find(p => p.id === productId);
+            if (!product) return;
+
+            const existingItem = cart.find(item => item.id === productId);
+            if (existingItem) {
+                existingItem.quantity += 1;
+            } else {
+                cart.push({ ...product, quantity: 1 });
+            }
+
+            updateCartUI();
+            showToast(`<i class="bi bi-bag-check-fill text-success me-2"></i>Added <strong>${product.name}</strong> to cart!`);
+        }
+
+        function updateCartQuantity(productId, delta) {
+            const item = cart.find(i => i.id === productId);
+            if (!item) return;
+
+            item.quantity += delta;
+            if (item.quantity <= 0) {
+                removeFromCart(productId);
+            } else {
+                updateCartUI();
+            }
+        }
+
+        function removeFromCart(productId) {
+            cart = cart.filter(item => item.id !== productId);
+            updateCartUI();
+            showToast("Item removed from cart");
+        }
+
+        function clearCart() {
+            if (cart.length === 0) return;
+            cart = [];
+            updateCartUI();
+            showToast("Cart cleared");
+        }
+
+        function updateCartUI() {
+            const badge = document.getElementById('cartCountBadge');
+            const totalCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+            badge.textContent = totalCount;
+
+            const cartList = document.getElementById('cartItemsList');
+            const cartSummary = document.getElementById('cartSummary');
+            const clearBtn = document.getElementById('clearCartBtn');
+            const checkoutBtn = document.getElementById('proceedCheckoutBtn');
+
+            if (cart.length === 0) {
+                cartList.innerHTML = `
+                    <div class="text-center py-4">
+                        <i class="bi bi-cart-x fs-1 text-muted"></i>
+                        <p class="text-muted mt-2 mb-0">Your cart is empty.</p>
+                    </div>
+                `;
+                cartSummary.classList.add('d-none');
+                clearBtn.disabled = true;
+                checkoutBtn.disabled = true;
+                return;
+            }
+
+            cartSummary.classList.remove('d-none');
+            clearBtn.disabled = false;
+            checkoutBtn.disabled = false;
+
+            cartList.innerHTML = cart.map(item => `
+                <div class="d-flex align-items-center justify-content-between p-2 mb-2 bg-light rounded-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <img src="${item.image}" alt="${item.name}" class="rounded" style="width: 50px; height: 50px; object-fit: cover;">
+                        <div>
+                            <h6 class="mb-0 fw-semibold text-truncate" style="max-width: 200px;">${item.name}</h6>
+                            <span class="small text-muted">$${item.price.toFixed(2)} each</span>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="btn-group btn-group-sm" role="group">
+                            <button class="btn btn-outline-secondary" onclick="updateCartQuantity(${item.id}, -1)">-</button>
+                            <span class="btn btn-light disabled px-3 fw-bold text-dark">${item.quantity}</span>
+                            <button class="btn btn-outline-secondary" onclick="updateCartQuantity(${item.id}, 1)">+</button>
+                        </div>
+                        <span class="fw-bold ms-2" style="min-width: 70px; text-align: right;">$${(item.price * item.quantity).toFixed(2)}</span>
+                        <button class="btn btn-link text-danger p-0 ms-2" onclick="removeFromCart(${item.id})">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+
+            // Calculations
+            const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            const tax = subtotal * 0.08;
+            const total = subtotal + tax;
+
+            document.getElementById('cartSubtotal').textContent = `$${subtotal.toFixed(2)}`;
+            document.getElementById('cartTax').textContent = `$${tax.toFixed(2)}`;
+            document.getElementById('cartTotal').textContent = `$${total.toFixed(2)}`;
+            document.getElementById('checkoutTotalPay').textContent = `$${total.toFixed(2)}`;
+        }
+
+        function openCheckoutModal() {
+            const cartModal = bootstrap.Modal.getInstance(document.getElementById('cartModal'));
+            cartModal.hide();
+
+            // Pre-fill user data if logged in
+            if (currentUser) {
+                document.getElementById('checkoutName').value = currentUser.name;
+                document.getElementById('checkoutEmail').value = currentUser.email;
+            }
+
+            const checkoutModal = new bootstrap.Modal(document.getElementById('checkoutModal'));
+            checkoutModal.show();
+        }
+
+        function processOrder(event) {
+            event.preventDefault();
+            
+            const checkoutModalEl = document.getElementById('checkoutModal');
+            const modalInstance = bootstrap.Modal.getInstance(checkoutModalEl);
+            modalInstance.hide();
+
+            cart = [];
+            updateCartUI();
+            
+            showToast('<i class="bi bi-check-circle-fill text-success me-2"></i>Order placed successfully! Check your email for details.');
+        }
+
+        // Authentication simulation
+        function renderAuthNav() {
+            const container = document.getElementById('authNavContainer');
+            if (currentUser) {
+                container.innerHTML = `
+                    <div class="dropdown">
+                        <button class="btn btn-light rounded-pill dropdown-toggle d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-person-circle text-primary fs-5"></i>
+                            <span class="fw-semibold">${currentUser.name}</span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end rounded-3 shadow-sm border-0">
+                            <li><a class="dropdown-item" href="#"><i class="bi bi-box-seam me-2"></i>My Orders</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item text-danger" href="#" onclick="handleLogout()"><i class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
+                        </ul>
+                    </div>
+                `;
+            } else {
+                container.innerHTML = `
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-outline-secondary rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#loginModal">Log In</button>
+                        <button class="btn btn-primary rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#signupModal">Sign Up</button>
+                    </div>
+                `;
+            }
+        }
+
+        function handleLogin(event) {
+            event.preventDefault();
+            const email = document.getElementById('loginEmail').value;
+            currentUser = { name: email.split('@')[0], email: email };
+            
+            const modal = bootstrap.Modal.getInstance(document.getElementById('loginModal'));
+            modal.hide();
+
+            renderAuthNav();
+            showToast(`Welcome back, ${currentUser.name}!`);
+        }
+
+        function handleSignup(event) {
+            event.preventDefault();
+            const name = document.getElementById('signupName').value;
+            const email = document.getElementById('signupEmail').value;
+            
+            currentUser = { name, email };
+            
+            const modal = bootstrap.Modal.getInstance(document.getElementById('signupModal'));
+            modal.hide();
+
+            renderAuthNav();
+            showToast(`Account created successfully! Welcome, ${name}.`);
+        }
+
+        function handleLogout() {
+            currentUser = null;
+            renderAuthNav();
+            showToast("Logged out successfully");
+        }
+
+        function switchModal(currentModalId, targetModalId) {
+            const currentModal = bootstrap.Modal.getInstance(document.querySelector(currentModalId));
+            currentModal.hide();
+            const targetModal = new bootstrap.Modal(document.querySelector(targetModalId));
+            targetModal.show();
+        }
+
+        function renderReviews() {
+            const container = document.getElementById('reviewsContainer');
+            container.innerHTML = reviews.map(rev => `
+                <div class="col-md-4">
+                    <div class="card h-100 review-card p-4">
+                        <div class="d-flex align-items-center mb-3">
+                            <img src="${rev.avatar}" class="avatar-img me-3" alt="${rev.author}" onerror="this.src='https://placehold.co/100/e2e8f0/475569?text=User'">
+                            <div>
+                                <h6 class="fw-bold mb-0">${rev.author}</h6>
+                                <div class="star-rating small">
+                                    ${renderStars(rev.rating)}
+                                </div>
+                            </div>
+                        </div>
+                        <p class="text-muted small mb-0">"${rev.comment}"</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function handleReviewSubmit(event) {
+            event.preventDefault();
+            const author = document.getElementById('reviewAuthor').value;
+            const rating = parseFloat(document.getElementById('reviewRating').value);
+            const comment = document.getElementById('reviewComment').value;
+
+            reviews.unshift({
+                id: Date.now(),
+                author,
+                rating,
+                comment,
+                avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(author)}`
+            });
+
+            renderReviews();
+
+            const modal = bootstrap.Modal.getInstance(document.getElementById('addReviewModal'));
+            modal.hide();
+            document.getElementById('reviewForm').reset();
+
+            showToast("Thank you for your feedback!");
+        }
+
+        // Toast Helper
+        function showToast(message) {
+            const toastEl = document.getElementById('liveToast');
+            document.getElementById('toastMessage').innerHTML = message;
+            const toast = new bootstrap.Toast(toastEl);
+            toast.show();
+        }
+    </script>
+</body>
+</html>
